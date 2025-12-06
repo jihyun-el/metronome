@@ -26,6 +26,7 @@ public class Metronome {
     private boolean updated = false;
     private EventChannel.EventSink eventTickSink;
     private int currentTick = 0;
+    private int savedTickForBuffer = 0;
 
     @SuppressWarnings("deprecation")
     public Metronome(byte[] mainFileBytes, byte[] accentedFileBytes, int bpm, int timeSignature, float volume,
@@ -87,17 +88,22 @@ public class Metronome {
     }
 
     public void setBPM(int bpm) {
-    if (bpm != audioBpm) {
-        audioBpm = bpm;
-        if (isPlaying()) {
-           
-            int framesPerBeat = (int) ((SAMPLE_RATE * 60.0) / audioBpm);
-            audioTrack.setPositionNotificationPeriod(framesPerBeat);
-           
+        if (bpm != audioBpm) {
+            audioBpm = bpm;
+            if (isPlaying()) {
+                int savedTick = currentTick;
+                savedTickForBuffer = savedTick;
+
+                pause();
+                play();
+
+                // tick 복원
+                currentTick = savedTick;
+                // 버퍼 생성 후 리셋
+                savedTickForBuffer = 0;
+            }
         }
     }
-}
-
     public void setTimeSignature(int timeSignature) {
         if (timeSignature != audioTimeSignature) {
             audioTimeSignature = timeSignature;
@@ -151,7 +157,6 @@ public class Metronome {
     }
 
     private short[] generateBuffer() {
-        currentTick = 0;
         int framesPerBeat = (int) (SAMPLE_RATE * 60 / (float) audioBpm);
         short[] bufferBar;
         if (audioTimeSignature < 2) {
@@ -162,7 +167,9 @@ public class Metronome {
             int bufferSize = framesPerBeat * audioTimeSignature;
             bufferBar = new short[bufferSize];
             for (int i = 0; i < audioTimeSignature; i++) {
-                short[] sound = (i == 0) ? accentedSound : mainSound;
+                // savedTickForBuffer를 고려해서 버퍼 순서 조정
+                int actualTick = (i + savedTickForBuffer) % audioTimeSignature;
+                short[] sound = (actualTick == 0) ? accentedSound : mainSound;
                 int soundLength = Math.min(framesPerBeat, sound.length);
                 System.arraycopy(sound, 0, bufferBar, i * framesPerBeat, soundLength);
             }

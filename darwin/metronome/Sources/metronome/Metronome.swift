@@ -16,6 +16,8 @@ class Metronome {
     private var sampleRate: Int = 44100
     private var timer: DispatchSourceTimer?
     private var startTime: AVAudioTime?
+    private var savedTickPosition: Int = 0  
+
     /// Initialize the metronome with the main and accented audio files.
     init(mainFileBytes: Data, accentedFileBytes: Data, bpm: Int, timeSignature: Int = 0, volume: Float, sampleRate: Int) {
         self.sampleRate = sampleRate
@@ -95,17 +97,22 @@ class Metronome {
     }
     
     /// Set the BPM of the metronome.
-   func setBPM(bpm: Int) {
-    if audioBpm != bpm {
-        audioBpm = bpm
-        if isPlaying {
-           
-            stopBeatTimer()
-            startBeatTimer()
-      
+    func setBPM(bpm: Int) {
+        if audioBpm != bpm {
+            if isPlaying {
+                savedTickPosition = getCurrentTick()
+            }
+
+            audioBpm = bpm
+
+            if isPlaying {
+                pause()
+                play()
+                // 재생 시작 후 savedTickPosition 리셋
+                savedTickPosition = 0
+            }
         }
     }
-}
 
     ///Set the TimeSignature of the metronome.
     func setTimeSignature(timeSignature: Int) {
@@ -242,7 +249,9 @@ class Metronome {
 
             var barArray = [Float]()
             for i in 0..<self.audioTimeSignature {
-                if i == 0 {
+                // savedTickPosition을 고려해서 버퍼 순서 조정
+                let actualTick = (i + self.savedTickPosition) % self.audioTimeSignature
+                if actualTick == 0 {
                     barArray.append(contentsOf: accentedClickArray)
                 } else {
                     barArray.append(contentsOf: mainClickArray)
@@ -279,8 +288,10 @@ class Metronome {
                   let elapsedTime = self.getElapsedTime(from: startTime, to: currentTime) else { return }
 
             let currentBeat = Int(elapsedTime / beatDuration)
-            let currentTick = (self.audioTimeSignature > 1) ? (currentBeat % self.audioTimeSignature) : 0
-
+            var currentTick = (self.audioTimeSignature > 1) ? (currentBeat % self.audioTimeSignature) : 0
+            if self.savedTickPosition > 0 {
+                currentTick = (currentTick + self.savedTickPosition) % self.audioTimeSignature
+            }
             DispatchQueue.main.async {
                 self.eventTick?.send(res: currentTick)
             }
@@ -303,6 +314,18 @@ class Metronome {
         audioEngine.detach(audioPlayerNode)
         audioBuffer = nil
         stopBeatTimer()
+    }
+
+    private func getCurrentTick() -> Int {
+        guard let startTime = self.startTime,
+              let currentTime = self.audioPlayerNode.lastRenderTime,
+              let elapsedTime = self.getElapsedTime(from: startTime, to: currentTime) else {
+            return 0
+        }
+
+        let beatDuration = 60.0 / Double(audioBpm)
+        let currentBeat = Int(elapsedTime / beatDuration)
+        return (audioTimeSignature > 1) ? (currentBeat % audioTimeSignature) : 0
     }
 }
 extension AVAudioFile {
