@@ -97,23 +97,26 @@ class Metronome {
     }
     
     /// Set the BPM of the metronome.
-    func setBPM(bpm: Int) {
-        if audioBpm != bpm {
-            print("🔵 setBPM called: \(bpm), isPlaying: \(isPlaying)")
-            if isPlaying {
-                savedTickPosition = (t + 1) % max(audioTimeSignature, 1)
-            }
+func setBPM(bpm: Int) {
+    if audioBpm != bpm {
+        print("🔵 setBPM called: \(bpm), isPlaying: \(isPlaying)")
+        
+        if isPlaying {
+            let t = getCurrentTick()
+            let ts = max(audioTimeSignature, 1)
+            savedTickPosition = (t + 1) % ts
+            print("🔵 Saved tick position: \(savedTickPosition)")
+        }
 
-            audioBpm = bpm
+        audioBpm = bpm
 
-            if isPlaying {
-                print("🔵 Restarting playback...")
-                pause()
-                play()
-                // savedTickPosition은 generateBuffer()에서 리셋됨
-            }
+        if isPlaying {
+            print("🔵 Restarting playback...")
+            pause()
+            play()
         }
     }
+}
 
     ///Set the TimeSignature of the metronome.
     func setTimeSignature(timeSignature: Int) {
