@@ -87,14 +87,16 @@ public class Metronome {
     }
 
     public void setBPM(int bpm) {
-        if (bpm != audioBpm) {
-            audioBpm = bpm;
-            if (isPlaying()) {
-                pause();
-                play();
-            }
+    if (bpm != audioBpm) {
+        audioBpm = bpm;
+        if (isPlaying()) {
+           
+            int framesPerBeat = (int) ((SAMPLE_RATE * 60.0) / audioBpm);
+            audioTrack.setPositionNotificationPeriod(framesPerBeat);
+           
         }
     }
+}
 
     public void setTimeSignature(int timeSignature) {
         if (timeSignature != audioTimeSignature) {

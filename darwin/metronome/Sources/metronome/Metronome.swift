@@ -95,15 +95,18 @@ class Metronome {
     }
     
     /// Set the BPM of the metronome.
-    func setBPM(bpm: Int) {
-        if audioBpm != bpm {
-            audioBpm = bpm
-            if isPlaying {
-                pause()
-                play()
-            }
+   func setBPM(bpm: Int) {
+    if audioBpm != bpm {
+        audioBpm = bpm
+        if isPlaying {
+           
+            stopBeatTimer()
+            startBeatTimer()
+      
         }
     }
+}
+
     ///Set the TimeSignature of the metronome.
     func setTimeSignature(timeSignature: Int) {
         if audioTimeSignature != timeSignature {
