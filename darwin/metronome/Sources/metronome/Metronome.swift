@@ -108,8 +108,7 @@ class Metronome {
             if isPlaying {
                 pause()
                 play()
-                // 재생 시작 후 savedTickPosition 리셋
-                savedTickPosition = 0
+                // savedTickPosition은 generateBuffer()에서 리셋됨
             }
         }
     }
@@ -248,9 +247,11 @@ class Metronome {
             let accentedClickArray = Array(UnsafeBufferPointer(start: bufferAccentedClick.floatChannelData![0], count: channelCount * Int(beatLength)))
 
             var barArray = [Float]()
+            // savedTickPosition을 로컬 변수로 복사
+            let offsetTick = self.savedTickPosition
             for i in 0..<self.audioTimeSignature {
-                // savedTickPosition을 고려해서 버퍼 순서 조정
-                let actualTick = (i + self.savedTickPosition) % self.audioTimeSignature
+                // offsetTick을 고려해서 버퍼 순서 조정
+                let actualTick = (i + offsetTick) % self.audioTimeSignature
                 if actualTick == 0 {
                     barArray.append(contentsOf: accentedClickArray)
                 } else {
@@ -259,6 +260,8 @@ class Metronome {
             }
 
             bufferBar.floatChannelData!.pointee.update(from: barArray, count: channelCount * Int(bufferBar.frameLength))
+            // 버퍼 생성 후 리셋
+            self.savedTickPosition = 0
         }
         //
         self.startTime = self.audioPlayerNode.lastRenderTime

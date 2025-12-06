@@ -99,8 +99,7 @@ public class Metronome {
 
                 // tick 복원
                 currentTick = savedTick;
-                // 버퍼 생성 후 리셋
-                savedTickForBuffer = 0;
+                // savedTickForBuffer는 generateBuffer()에서 리셋됨
             }
         }
     }
@@ -166,13 +165,17 @@ public class Metronome {
         } else {
             int bufferSize = framesPerBeat * audioTimeSignature;
             bufferBar = new short[bufferSize];
+            // savedTickForBuffer를 로컬 변수로 복사
+            int offsetTick = savedTickForBuffer;
             for (int i = 0; i < audioTimeSignature; i++) {
-                // savedTickForBuffer를 고려해서 버퍼 순서 조정
-                int actualTick = (i + savedTickForBuffer) % audioTimeSignature;
+                // offsetTick을 고려해서 버퍼 순서 조정
+                int actualTick = (i + offsetTick) % audioTimeSignature;
                 short[] sound = (actualTick == 0) ? accentedSound : mainSound;
                 int soundLength = Math.min(framesPerBeat, sound.length);
                 System.arraycopy(sound, 0, bufferBar, i * framesPerBeat, soundLength);
             }
+            // 버퍼 생성 후 리셋
+            savedTickForBuffer = 0;
         }
         updated = false;
         return bufferBar;
