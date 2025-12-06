@@ -99,13 +99,16 @@ class Metronome {
     /// Set the BPM of the metronome.
     func setBPM(bpm: Int) {
         if audioBpm != bpm {
+            print("🔵 setBPM called: \(bpm), isPlaying: \(isPlaying)")
             if isPlaying {
                 savedTickPosition = getCurrentTick()
+                print("🔵 Saved tick position: \(savedTickPosition)")
             }
 
             audioBpm = bpm
 
             if isPlaying {
+                print("🔵 Restarting playback...")
                 pause()
                 play()
                 // savedTickPosition은 generateBuffer()에서 리셋됨
@@ -216,10 +219,12 @@ class Metronome {
 #endif
     /// Generate buffer with accents based on time signature
     private func generateBuffer() -> AVAudioPCMBuffer {
+        print("🟢 generateBuffer called: BPM=\(self.audioBpm), savedTickPosition=\(self.savedTickPosition)")
         audioFileMain.framePosition = 0
         audioFileAccented.framePosition = 0
 
         let beatLength = AVAudioFrameCount(Double(self.sampleRate) * 60 / Double(self.audioBpm))
+        print("🟢 beatLength: \(beatLength)")
         // let beatLength = AVAudioFrameCount(audioFileMain.processingFormat.sampleRate * 60 / Double(self.audioBpm))
         let bufferMainClick = AVAudioPCMBuffer(pcmFormat: audioFileMain.processingFormat, frameCapacity: beatLength)!
         try! audioFileMain.read(into: bufferMainClick)
@@ -249,6 +254,7 @@ class Metronome {
             var barArray = [Float]()
             // savedTickPosition을 로컬 변수로 복사
             let offsetTick = self.savedTickPosition
+            print("🟢 Buffer generation with offsetTick: \(offsetTick)")
             for i in 0..<self.audioTimeSignature {
                 // offsetTick을 고려해서 버퍼 순서 조정
                 let actualTick = (i + offsetTick) % self.audioTimeSignature
@@ -262,6 +268,7 @@ class Metronome {
             bufferBar.floatChannelData!.pointee.update(from: barArray, count: channelCount * Int(bufferBar.frameLength))
             // 버퍼 생성 후 리셋
             self.savedTickPosition = 0
+            print("🟢 Buffer generated and savedTickPosition reset")
         }
         //
         self.startTime = self.audioPlayerNode.lastRenderTime
