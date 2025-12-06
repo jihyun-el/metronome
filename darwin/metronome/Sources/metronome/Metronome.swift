@@ -101,8 +101,7 @@ class Metronome {
         if audioBpm != bpm {
             print("🔵 setBPM called: \(bpm), isPlaying: \(isPlaying)")
             if isPlaying {
-                savedTickPosition = getCurrentTick()
-                print("🔵 Saved tick position: \(savedTickPosition)")
+                savedTickPosition = (t + 1) % max(audioTimeSignature, 1)
             }
 
             audioBpm = bpm
